@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Expires" content="0">
+  <meta http-equiv="Last-Modified" content="0">
+  <meta http-equiv="Cache-Control" content="no-cache, mustrevalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <title>醫療影像串流管理控制台</title>
+
+  <!-- Bootstrap & Font -->
+  <link rel="stylesheet" href="../../static/css/bootstrap.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  
+  <style>
+    :root {
+      --primary: #0072CE;         /* 醫療藍 */
+      --primary-light: #e6f3ff;
+      --secondary: #4F758B;       /* 輔助藍灰色 */
+      --success: #2CA58D;         /* 健康綠 */
+      --warning: #F1C40F;
+      --danger: #E74C3C;
+      --light: #F8FAFC;
+      --dark: #2C3E50;
+      --border-radius: 12px;
+      --shadow: 0 8px 24px rgba(31, 38, 135, 0.1);
+    }
+    
+    body {
+      background: linear-gradient(120deg, var(--primary-light) 0%, #ffffff 100%);
+      color: var(--dark);
+      font-family: 'Noto Sans TC', sans-serif;
+      min-height: 100vh;
+      margin: 0;
+      padding-top: 70px;
+    }
+    
+    .navbar-custom {
+      background-color: #ffffff;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+      padding: 0.7rem 1rem;
+    }
+    
+    .navbar-brand {
+      font-weight: 700;
+      color: var(--primary) !important;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .navbar-brand .logo-icon {
+      font-size: 1.5rem;
+      margin-right: 10px;
+    }
+    
+    .nav-item .nav-link {
+      color: var(--secondary);
+      font-weight: 500;
+      transition: all 0.3s ease;
+      padding: 0.5rem 1rem;
+    }
+    
+    .nav-item .nav-link:hover {
+      color: var(--primary);
+      background-color: var(--primary-light);
+      border-radius: 6px;
+    }
+    
+    .nav-item .nav-link i {
+      margin-right: 5px;
+    }
+    
+    .container-custom {
+      background: rgba(255, 255, 255, 0.98);
+      border-radius: var(--border-radius);
+      padding: 2.5rem;
+      margin-top: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(209, 213, 219, 0.3);
+    }
+    
+    .page-header {
+      position: relative;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      text-align: center;
+    }
+    
+    .page-header:after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 3px;
+      background: var(--primary);
+      border-radius: 2px;
+    }
+    
+    h2 {
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 1px;
+      margin-bottom: 0.5rem;
+    }
+    
+    /* 儀表板卡片 */
+    .card {
+      border: none;
+      box-shadow: var(--shadow);
+      border-radius: var(--border-radius);
+      transition: transform 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    .card .card-body {
+      padding: 1.5rem;
+    }
+    .card-title {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    /* Streams Panel */
+    .streams-panel {
+      background-color: var(--light);
+      border-radius: var(--border-radius);
+      padding: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      margin-bottom: 1.5rem;
+      transition: all 0.3s ease;
+    }
+    .streams-panel:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    }
+    .streams-panel-header {
+      font-weight: 500;
+      color: var(--secondary);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      padding-bottom: 0.8rem;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    .streams-panel-header i {
+      margin-right: 8px;
+      color: var(--primary);
+    }
+    
+    .list-group-item {
+      background: var(--light);
+      border: 1px solid #e2e8f0;
+      margin-bottom: 0.8rem;
+      color: var(--secondary);
+      transition: all 0.3s ease;
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      display: flex;
+      align-items: center;
+    }
+    .list-group-item:hover, .list-group-item.active {
+      background: var(--primary-light);
+      transform: translateX(5px);
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+    .list-group-item.active {
+      font-weight: 500;
+    }
+    
+    /* 影片與控制按鍵 */
+    #videoElem {
+      width: 100%;
+      border-radius: var(--border-radius);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      border: 2px solid var(--primary-light);
+      transition: all 0.3s ease;
+      background-color: #000;
+      aspect-ratio: 16/9;
+      /* 禁止原生全螢幕 */
+      controlsList="nofullscreen"
+    }
+    #videoElem:hover {
+      transform: scale(1.01);
+      border-color: var(--primary);
+    }
+    
+    /* UI 遮罩 (黑底+blur(20px)) */
+    .video-mask {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(20px);
+      z-index: 5;
+    }
+    
+    .info-row {
+      margin-top: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .info-item {
+      background: rgba(0, 114, 206, 0.05);
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+    .info-item i {
+      margin-right: 8px;
+      color: var(--primary);
+    }
+    
+    .recording-timer {
+      color: var(--danger);
+      font-weight: 500;
+      margin-top: 1rem;
+      display: none;
+      text-align: center;
+    }
+    .recording-timer.active {
+      display: block;
+    }
+    
+    .video-controls {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 1.5rem;
+    }
+    .control-btn {
+      background-color: var(--light);
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 0.5rem 1.2rem;
+      color: var(--secondary);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .control-btn:hover {
+      background-color: var(--primary-light);
+      color: var(--primary);
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+    .control-btn.recording {
+      background-color: rgba(231, 76, 60, 0.1);
+      color: var(--danger);
+      border-color: var(--danger);
+      animation: recordingPulse 2s infinite;
+    }
+    .control-btn i {
+      margin-right: 8px;
+    }
+    
+    /* 通知提示 */
+    .notification {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      padding: 1rem;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      transition: all 0.3s ease;
+      transform: translateX(120%);
+      display: flex;
+      align-items: center;
+    }
+    .notification.show {
+      transform: translateX(0);
+    }
+    .notification.success {
+      border-left: 4px solid var(--success);
+    }
+    .notification.error {
+      border-left: 4px solid var(--danger);
+    }
+    .notification i {
+      margin-right: 10px;
+      font-size: 1.2rem;
+    }
+    .notification.success i {
+      color: var(--success);
+    }
+    .notification.error i {
+      color: var(--danger);
+    }
+    
+    @media (max-width: 768px) {
+      .container-custom {
+        padding: 1.5rem;
+      }
+      .card .card-body {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 導覽列 -->
+  <nav class="navbar navbar-expand-md navbar-custom fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">
+        <i class="fas fa-hospital-alt logo-icon"></i>
+        醫療影像串流管理控制台
+      </a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" 
+              aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav ml-auto">
+          <!-- 新增「登入」選項：未登入時顯示 -->
+          <li class="nav-item" id="loginNav" style="display: none;">
+            <a class="nav-link" href="#" id="loginChoiceBtn"><i class="fas fa-sign-in-alt"></i> 登入</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#"><i class="fas fa-cog"></i> 系統設定</a>
+          </li>
+          <!-- 已登入後顯示「登出」 -->
+          <li class="nav-item" id="logoutNav" style="display: none;">
+            <a class="nav-link" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> 登出</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  
+  <!-- 通知提示 -->
+  <div class="notification" id="notification">
+    <i class="fas fa-check-circle"></i>
+    <span id="notification-message"></span>
+  </div>
+  
+  <!-- 主容器 -->
+  <div class="container container-custom">
+    <!-- 頁首：管理控制台標題 -->
+    <div class="page-header">
+      <h2>醫療影像串流管理控制台</h2>
+    </div>
+    
+    <!-- 儀表板卡片 -->
+    <div class="row">
+      <div class="col-6 col-md-3 mb-4">
+        <div class="card text-center">
+          <div class="card-body">
+            <i class="fas fa-tv fa-2x" style="color: var(--primary);"></i>
+            <h5 class="card-title mt-2">可用設備</h5>
+            <p class="card-text" id="deviceCount" style="font-size: 1.5rem;">{{ len .suuidMap }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 mb-4">
+        <div class="card text-center">
+          <div class="card-body">
+            <i class="fas fa-user-shield fa-2x" style="color: var(--primary);"></i>
+            <h5 class="card-title mt-2">管理員狀態</h5>
+            <p class="card-text" id="adminStatus" style="font-size: 1.5rem;">未登入</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 mb-4">
+        <div class="card text-center">
+          <div class="card-body">
+            <i class="fas fa-eye-slash fa-2x" style="color: var(--primary);"></i>
+            <h5 class="card-title mt-2">遮罩狀態</h5>
+            <p class="card-text" id="maskStatus" style="font-size: 1.5rem;">啟用</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 mb-4">
+        <div class="card text-center">
+          <div class="card-body">
+            <i class="fas fa-clock fa-2x" style="color: var(--primary);"></i>
+            <h5 class="card-title mt-2">上線時間</h5>
+            <p class="card-text" id="systemUptime" style="font-size: 1.5rem;">00:00:00</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 主串流區：左側串流列表 + 右側即時影像與控制 -->
+    <div class="row">
+      <!-- 串流列表 -->
+      <div class="col-12 col-lg-3 mb-4">
+        <div class="streams-panel">
+          <div class="streams-panel-header">
+            <i class="fas fa-list-ul"></i> 可用串流列表
+          </div>
+          <div class="list-group">
+            <a href="javascript:void(0);" id="local_camera" class="list-group-item list-group-item-action">
+              <i class="fas fa-video"></i> 本地攝影機
+            </a>
+            <a href="javascript:void(0);" id="phone_camera" class="list-group-item list-group-item-action">
+              <i class="fas fa-mobile-alt"></i> 手機鏡頭
+            </a>
+            {{ range .suuidMap }}
+              <a href="{{ . }}" id="{{ . }}" class="list-group-item list-group-item-action">
+                <i class="fas fa-video"></i>{{ . }}
+              </a>
+            {{ end }}
+          </div>
+        </div>
+      </div>
+      
+      <!-- 即時影像與控制 -->
+      <div class="col-12 col-lg-9">
+        <input type="hidden" id="suuid" value="{{ .suuid }}">
+        <input type="hidden" id="port" value="{{ .port }}">
+        <input type="hidden" id="localSessionDescription" readonly>
+        <input type="hidden" id="remoteSessionDescription">
+
+        <div class="streams-panel">
+          <div class="streams-panel-header">
+            <i class="fas fa-broadcast-tower"></i> 即時影像串流
+          </div>
+          <div id="remoteVideos" style="position: relative;">
+            <video id="videoElem" autoplay muted controls controlsList="nofullscreen"></video>
+            <div class="video-mask"></div>
+          </div>
+          <div class="info-row mt-3">
+            <div class="info-item">
+              <i class="fas fa-signal"></i> 串流品質: <span id="streamQuality">優</span>
+            </div>
+            <div class="info-item">
+              <i class="fas fa-clock"></i> 連線時間: <span id="connectionTime">00:00:00</span>
+            </div>
+          </div>
+          <div class="recording-timer mt-3" id="recordingTimer">
+            <i class="fas fa-circle"></i> 錄影中: <span id="recordingTime">00:00:00</span>
+          </div>
+          <div class="video-controls mt-3">
+            <button class="control-btn" id="fullscreenBtn"><i class="fas fa-expand"></i> 全螢幕</button>
+            <button class="control-btn" id="snapshotBtn"><i class="fas fa-camera"></i> 截圖</button>
+            <button class="control-btn" id="recordBtn"><i class="fas fa-record-vinyl"></i> 開始錄影</button>
+            <button class="control-btn" id="settingsBtn"><i class="fas fa-sliders-h"></i> 影像設定</button>
+          </div>
+          <div id="statusText" class="mt-3 status-text"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 設定 Modal -->
+  <div class="modal fade" id="settingsModal" tabindex="-1" role="dialog" aria-labelledby="settingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="settingsModalLabel">影像設定</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="關閉">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- 若未登入顯示登入表單；已登入則直接顯示設定區 -->
+          <div id="loginForm">
+            <div class="form-group">
+              <label for="usernameInput">使用者帳號</label>
+              <input type="text" class="form-control" id="usernameInput" placeholder="請輸入帳號">
+            </div>
+            <div class="form-group">
+              <label for="passwordInput">密碼</label>
+              <input type="password" class="form-control" id="passwordInput" placeholder="請輸入密碼">
+            </div>
+            <div id="loginError" class="text-danger" style="display: none;"></div>
+            <button type="button" class="btn btn-primary" id="loginBtn">登入</button>
+          </div>
+          <div id="settingsForm" style="display: none;">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="toggleMask">
+              <label class="form-check-label" for="toggleMask">不使用馬賽克效果 (顯示原始影像)</label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="modalConfirmBtn" data-dismiss="modal">確定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 核心JS -->
+  <script type="text/javascript" src="../../static/js/jquery-3.4.1.min.js"></script>
+  <script src="../../static/js/bootstrap.min.js"></script>
+  <script src="../../static/js/adapter-latest.js"></script>
+  <script type="text/javascript" src="../../static/js/app.js?ver={{ .version }}"></script>
+  
+  <script>
+    /***********************************************************************
+     * 原本的多次像素化函式(保留)，但我們不再使用它來做截圖/錄影，
+     * 而是改成與外層 video-mask 一致的「blur(30px)+黑底」效果。
+     ***********************************************************************/
+    function applyPixelationMultiplePasses(ctx, video, width, height, pixelSize, passCount) {
+      // 保留原函式，以確保不變動程式結構
+      let buffer = document.createElement('canvas');
+      buffer.width = width;
+      buffer.height = height;
+      let bufferCtx = buffer.getContext('2d');
+      bufferCtx.drawImage(video, 0, 0, width, height);
+      for (let p = 0; p < passCount; p++) {
+        let scaledW = Math.floor(width / pixelSize);
+        let scaledH = Math.floor(height / pixelSize);
+        if (scaledW < 1) scaledW = 1;
+        if (scaledH < 1) scaledH = 1;
+        let tempCanvas = document.createElement('canvas');
+        tempCanvas.width = scaledW;
+        tempCanvas.height = scaledH;
+        let tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(buffer, 0, 0, scaledW, scaledH);
+        bufferCtx.imageSmoothingEnabled = false;
+        bufferCtx.clearRect(0, 0, width, height);
+        bufferCtx.drawImage(tempCanvas, 0, 0, scaledW, scaledH, 0, 0, width, height);
+      }
+      ctx.drawImage(buffer, 0, 0);
+    }
+
+    let isAdmin = false;  
+    let maskEnabled = true;
+    let currentStream = null;
+    const videoElem = document.getElementById('videoElem');
+
+    function updateStatusBoxes() {
+      document.getElementById('adminStatus').textContent = isAdmin ? '已登入' : '未登入';
+      document.getElementById('maskStatus').textContent = maskEnabled ? '啟用' : '停用';
+      document.getElementById('loginNav').style.display = isAdmin ? 'none' : 'block';
+      document.getElementById('logoutNav').style.display = isAdmin ? 'block' : 'none';
+    }
+
+    // 系統上線計時
+    let systemStartTime = new Date();
+    function updateSystemUptime() {
+      let now = new Date();
+      let diff = now - systemStartTime;
+      document.getElementById('systemUptime').textContent = formatTime(diff);
+    }
+    setInterval(updateSystemUptime, 1000);
+
+    function formatTime(ms) {
+      let seconds = Math.floor(ms / 1000);
+      let h = Math.floor(seconds / 3600);
+      let m = Math.floor((seconds % 3600) / 60);
+      let s = seconds % 60;
+      return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    let mediaRecorder;
+    let recordedChunks = [];
+    let isRecording = false;
+    let recordingStartTime;
+    let recordingInterval;
+    let connectionTimer;
+    let connectionStartTime = new Date();
+
+    const recordBtn = document.getElementById('recordBtn');
+    const recordingTimerElem = document.getElementById('recordingTimer');
+    const recordingTimeDisplay = document.getElementById('recordingTime');
+    const connectionTimeDisplay = document.getElementById('connectionTime');
+    const notification = document.getElementById('notification');
+    const notificationMessage = document.getElementById('notification-message');
+
+    let recordingCanvas, recordingCtx, animationFrameId;
+
+    document.addEventListener('DOMContentLoaded', function() {
+      // 可用設備數 +2
+      let deviceCountEl = document.getElementById('deviceCount');
+      deviceCountEl.textContent = parseInt(deviceCountEl.textContent) + 2;
+
+      startConnectionTimer();
+      videoElem.addEventListener('loadedmetadata', prepareRecording);
+      updateStatusBoxes();
+
+      // 監聽串流列表點擊
+      document.querySelectorAll('.list-group-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          document.querySelectorAll('.list-group-item').forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+        });
+      });
+
+      // 本地與手機鏡頭切換
+      document.getElementById('local_camera').addEventListener('click', function(e) {
+        e.preventDefault();
+        switchToLocalCamera();
+      });
+      document.getElementById('phone_camera').addEventListener('click', function(e) {
+        e.preventDefault();
+        switchToPhoneCamera();
+      });
+
+      // 如果後端帶 suuid => 預設高亮
+      const suuid = document.getElementById('suuid').value;
+      if (suuid) {
+        const defaultItem = document.getElementById(suuid);
+        if (defaultItem) {
+          defaultItem.classList.add('active');
+        }
+      }
+
+      // 防止 video 雙擊全螢幕
+      videoElem.addEventListener('dblclick', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        goFullscreen();
+      });
+
+      // 「登入」按鈕 => 顯示設定視窗
+      document.getElementById('loginChoiceBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        $('#settingsModal').modal('show');
+      });
+
+      // 功能鍵
+      document.getElementById('snapshotBtn').addEventListener('click', doSnapshotWithBlurOverlay);
+      document.getElementById('recordBtn').addEventListener('click', toggleRecordingBlurOverlay);
+      document.getElementById('fullscreenBtn').addEventListener('click', goFullscreen);
+      document.getElementById('settingsBtn').addEventListener('click', function() {
+        $('#settingsModal').modal('show');
+      });
+    });
+
+    function prepareRecording() {
+      if (!videoElem.captureStream) {
+        showNotification('您的瀏覽器不支援錄影功能', 'error');
+        recordBtn.disabled = true;
+      }
+    }
+
+    function startConnectionTimer() {
+      connectionTimer = setInterval(function(){
+        const now = new Date();
+        const diff = now - connectionStartTime;
+        connectionTimeDisplay.textContent = formatTime(diff);
+      }, 1000);
+    }
+
+    const container = document.getElementById('remoteVideos');
+    function goFullscreen() {
+      if (container.requestFullscreen) {
+        container.requestFullscreen();
+      } else if (container.webkitRequestFullscreen) {
+        container.webkitRequestFullscreen();
+      } else if (container.msRequestFullscreen) {
+        container.msRequestFullscreen();
+      } else {
+        showNotification('無法進入全螢幕模式', 'error');
+      }
+    }
+
+    /*********************************************************
+     * 截圖：與外面 video-mask 一樣 -> blur(30px) + 黑底0.7
+     *********************************************************/
+    function doSnapshotWithBlurOverlay() {
+      if (!videoElem.videoWidth) {
+        showNotification('無法擷取影像，請確認影像串流已啟動', 'error');
+        return;
+      }
+      let w = videoElem.videoWidth;
+      let h = videoElem.videoHeight;
+      let canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      let ctx = canvas.getContext('2d');
+      
+      if (maskEnabled) {
+        // 先套用 blur(30px)
+        ctx.filter = 'blur(30px)';
+        ctx.drawImage(videoElem, 0, 0, w, h);
+        // 再加一層黑色半透明
+        ctx.filter = 'none';
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.fillRect(0, 0, w, h);
+      } else {
+        // 原始畫面
+        ctx.drawImage(videoElem, 0, 0, w, h);
+      }
+
+      // 在畫面上疊加時間戳
+      ctx.font = '16px Arial';
+      ctx.fillStyle = 'white';
+      ctx.shadowColor = 'black';
+      ctx.shadowBlur = 3;
+      const timestamp = new Date().toLocaleString('zh-TW');
+      ctx.fillText(`時間: ${timestamp}`, 10, 30);
+
+      const patientID = 'A123456789';
+      const dateStr = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const filename = `醫療影像_${patientID}_${dateStr}.png`;
+
+      // 下載
+      let a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = filename;
+      a.click();
+      
+      showNotification('截圖已保存至您的下載資料夾', 'success');
+    }
+
+    /*******************************************************************
+     * 錄影：也與外面 video-mask 一樣 -> blur(30px) + 黑底0.7
+     *******************************************************************/
+    function toggleRecordingBlurOverlay() {
+      if (!isRecording) {
+        startRecordingBlurOverlay();
+      } else {
+        stopRecording();
+      }
+    }
+
+    function startRecordingBlurOverlay() {
+      if (!videoElem.videoWidth) {
+        showNotification('影像尚未載入，無法錄影', 'error');
+        return;
+      }
+      recordingCanvas = document.createElement('canvas');
+      recordingCanvas.width = videoElem.videoWidth;
+      recordingCanvas.height = videoElem.videoHeight;
+      recordingCtx = recordingCanvas.getContext('2d');
+      
+      const stream = recordingCanvas.captureStream(30);
+      
+      try {
+        mediaRecorder = new MediaRecorder(stream, {
+          mimeType: 'video/webm;codecs=vp9,opus',
+          videoBitsPerSecond: 5000000
+        });
+        recordedChunks = [];
+        
+        mediaRecorder.ondataavailable = function(e) {
+          if (e.data.size > 0) {
+            recordedChunks.push(e.data);
+          }
+        };
+        mediaRecorder.onstop = function() {
+          saveRecording();
+        };
+        
+        function drawFrame() {
+          let w = recordingCanvas.width;
+          let h = recordingCanvas.height;
+          
+          recordingCtx.clearRect(0, 0, w, h);
+          if (maskEnabled) {
+            // blur(30px) + 黑底0.7
+            recordingCtx.filter = 'blur(30px)';
+            recordingCtx.drawImage(videoElem, 0, 0, w, h);
+            recordingCtx.filter = 'none';
+            recordingCtx.fillStyle = 'rgba(0,0,0,0.7)';
+            recordingCtx.fillRect(0, 0, w, h);
+          } else {
+            // 原畫面
+            recordingCtx.drawImage(videoElem, 0, 0, w, h);
+          }
+          animationFrameId = requestAnimationFrame(drawFrame);
+        }
+        drawFrame();
+        
+        mediaRecorder.start(1000);
+        isRecording = true;
+        recordBtn.innerHTML = '<i class="fas fa-stop-circle"></i> 停止錄影';
+        recordBtn.classList.add('recording');
+        recordingStartTime = new Date();
+        recordingTimerElem.classList.add('active');
+        updateRecordingTime();
+        recordingInterval = setInterval(updateRecordingTime, 1000);
+        showNotification('開始錄影', 'success');
+      } catch (error) {
+        console.error('錄影初始化失敗:', error);
+        showNotification('錄影初始化失敗: ' + error.message, 'error');
+      }
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && isRecording) {
+        mediaRecorder.stop();
+        isRecording = false;
+        recordBtn.innerHTML = '<i class="fas fa-record-vinyl"></i> 開始錄影';
+        recordBtn.classList.remove('recording');
+        clearInterval(recordingInterval);
+        recordingTimerElem.classList.remove('active');
+        
+        if(animationFrameId) cancelAnimationFrame(animationFrameId);
+        
+        showNotification('正在處理錄影檔案...', 'success');
+      }
+    }
+
+    function saveRecording() {
+      try {
+        if (recordedChunks.length === 0) {
+          showNotification('無錄影資料可供保存', 'error');
+          return;
+        }
+        const mimeType = mediaRecorder.mimeType || 'video/webm';
+        const blob = new Blob(recordedChunks, { type: mimeType });
+        const patientID = 'A123456789';
+        const dateStr = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const duration = formatTime(new Date() - recordingStartTime);
+        const filename = `醫療錄影_${patientID}_${dateStr}_${duration}.webm`;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        }, 100);
+        showNotification('錄影已保存至您的下載資料夾', 'success');
+      } catch (error) {
+        console.error('保存錄影時發生錯誤:', error);
+        showNotification('保存錄影時發生錯誤: ' + error.message, 'error');
+      }
+    }
+
+    function updateRecordingTime() {
+      if (!recordingStartTime) return;
+      const now = new Date();
+      const diff = now - recordingStartTime;
+      recordingTimeDisplay.textContent = formatTime(diff);
+    }
+
+    function showNotification(message, type) {
+      notificationMessage.textContent = message;
+      notification.classList.remove('success', 'error');
+      notification.classList.add(type);
+      notification.classList.add('show');
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 3000);
+    }
+
+    /************ 登入 + 遮罩設定 ************/
+    document.getElementById('settingsBtn').addEventListener('click', function() {
+      $('#settingsModal').modal('show');
+    });
+
+    // Enter 鍵登入
+    document.getElementById('usernameInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') document.getElementById('loginBtn').click();
+    });
+    document.getElementById('passwordInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') document.getElementById('loginBtn').click();
+    });
+
+    $('#settingsModal').on('show.bs.modal', function () {
+      if (isAdmin) {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('settingsForm').style.display = 'block';
+        document.getElementById('toggleMask').checked = !maskEnabled;
+      } else {
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('settingsForm').style.display = 'none';
+        document.getElementById('loginError').style.display = 'none';
+        document.getElementById('usernameInput').value = '';
+        document.getElementById('passwordInput').value = '';
+      }
+    });
+
+    document.getElementById('loginBtn').addEventListener('click', function() {
+      const username = document.getElementById('usernameInput').value;
+      const password = document.getElementById('passwordInput').value;
+      if (username === 'admin' && password === 'Mlab03+-') {
+        isAdmin = true;
+        updateStatusBoxes();
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('settingsForm').style.display = 'block';
+        showNotification('登入成功', 'success');
+      } else {
+        document.getElementById('loginError').textContent = '帳號或密碼錯誤';
+        document.getElementById('loginError').style.display = 'block';
+      }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+      isAdmin = false;
+      maskEnabled = true;
+      document.querySelector('#remoteVideos .video-mask').style.display = 'block';
+      updateStatusBoxes();
+      
+      $('#settingsModal').modal('hide');
+      document.getElementById('loginForm').style.display = 'block';
+      document.getElementById('settingsForm').style.display = 'none';
+      showNotification('已登出', 'success');
+    });
+
+    document.getElementById('modalConfirmBtn').addEventListener('click', function() {
+      if (isAdmin) {
+        let useRaw = document.getElementById('toggleMask').checked;
+        maskEnabled = !useRaw;
+        document.querySelector('#remoteVideos .video-mask').style.display = maskEnabled ? 'block' : 'none';
+        updateStatusBoxes();
+      }
+    });
+
+    /********** 切換攝影機 **********/
+    function switchToLocalCamera() {
+      if (currentStream) {
+        stopMediaStream(currentStream);
+        currentStream = null;
+      }
+      navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'user' } },
+        audio: false
+      })
+      .then(stream => {
+        currentStream = stream;
+        videoElem.srcObject = stream;
+        videoElem.muted = true; 
+        videoElem.play();
+        showNotification('已切換至本地攝影機 (前鏡頭)', 'success');
+        connectionStartTime = new Date();
+      })
+      .catch(err => {
+        console.error('無法取得本地攝影機', err);
+        showNotification('無法取得本地攝影機: ' + err.message, 'error');
+      });
+    }
+
+    function switchToPhoneCamera() {
+      if (currentStream) {
+        stopMediaStream(currentStream);
+        currentStream = null;
+      }
+      navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false
+      })
+      .then(stream => {
+        currentStream = stream;
+        videoElem.srcObject = stream;
+        videoElem.muted = true;
+        videoElem.play();
+        showNotification('已切換至手機鏡頭 (後鏡頭)', 'success');
+        connectionStartTime = new Date();
+      })
+      .catch(err => {
+        console.error('無法取得手機鏡頭', err);
+        showNotification('無法取得手機鏡頭: ' + err.message, 'error');
+      });
+    }
+
+    function stopMediaStream(stream) {
+      stream.getTracks().forEach(track => {
+        track.stop();
+      });
+    }
+  </script>
+</body>
+</html>

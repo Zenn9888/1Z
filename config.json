@@ -1,0 +1,15 @@
+{
+  "server": {
+    "http_port": "0.0.0.0:8008"
+  },
+  "streams": {
+    "camera1": {
+      "on_demand": false,
+      "url": "rtsp://admin:Mlab03+-@192.168.0.118:554/cam/realmonitor?channel=1&subtype=0"
+    },
+    "camera2": {
+      "on_demand": false,
+      "url": "rtsp://admin:Mlab03+-@192.168.0.118:554/cam/realmonitor?channel=2&subtype=0"
+    }
+  }
+}
